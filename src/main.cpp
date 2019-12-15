@@ -36,6 +36,9 @@ int previousOutputButton = 0;
   - Frequency
   - 
 
+  NEW FOR DUE AND BIGGER LCD
+  - Can choose output on LCD
+  - current output setting shown aswell
 */
 
 void LCD_Display();
@@ -46,7 +49,7 @@ void statusLED(String colour);
 
 void setup() {
   // put your setup code here, to run once:
-  lcd.begin(16,2);
+  lcd.begin(20,4);
 
   pinMode(modeSelectButton, INPUT);
   pinMode(selectionButton, INPUT);
@@ -75,9 +78,13 @@ void loop() {
 
 void LCD_Display() {
   lcd.setCursor(0,0);
-  lcd.print("Mode: " + modes[mode]);
+  lcd.print("Output: " + (String)selectedOutput);
   lcd.setCursor(0,1);
-  lcd.print(settings[selection]);
+  lcd.print("Mode: " + modes[mode]);
+  lcd.setCursor(0,2);
+  lcd.print("Setting: " + settings[selection]);
+  lcd.setCursor(0,3);
+  lcd.print("Value: 10000 Hz");
 }
 
 void otherOutput() {
