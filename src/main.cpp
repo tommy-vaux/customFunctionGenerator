@@ -6,6 +6,9 @@
 int modeSource1 = 0;
 int modeSource2 = 0;
 int selectedOutput = 0;
+int scrollMultiplier = 0;
+int encoderValue = 0;
+int lastEncoded = 0;
 // possible selections
 //String modes[5] = {"DC", "SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"};
 //String settings[6] = {"Voltage Offset", "Amplitude", "Frequency", "Duty Cycle", "Phase"};
@@ -77,10 +80,12 @@ int previousHigherDigitButton = 0;
 int counter = 0;
 int clickState = 0;
 int previousClickState = 0;
-int scrollHigher = 24;
-int scrollLower = 22;
+int scrollHigher = 28;
+int scrollLower = 26;
 
 
+int rotaryState;
+int lastRotaryState;
 /* SETTINGS
 
 - MODE 1 - DC Power Supply - DC Output
@@ -98,9 +103,10 @@ int scrollLower = 22;
   - Can choose output on LCD
   - current output setting shown aswell
 */
-
+void updateEncoder();
 void LCD_Display();
 void selectionButtons();
+void rotaryEncoder();
 //void otherOutput();
 void loopThruOptions();
 int debouncedInput(int input);
@@ -117,6 +123,10 @@ void setup() {
   // rotary encoder
   pinMode(scrollHigher, INPUT);
   pinMode(scrollLower, INPUT);
+  // turn on pullup resistors
+  digitalWrite(scrollHigher, HIGH);
+  digitalWrite(scrollLower, HIGH);
+
   pinMode(lowerDigitButton, INPUT);
   pinMode(higherDigitButton, INPUT);
 
@@ -133,6 +143,9 @@ void setup() {
   functionData1[2].name = functionData2[2].name = "TRIANGLE";
   functionData1[3].name = functionData2[3].name = "SAWTOOTH";
 
+  //setup rotary encoder
+  lastRotaryState = digitalRead(scrollHigher);
+
   Serial.begin(9600);
 }
 
@@ -141,6 +154,8 @@ void loop() {
   //loopThruOptions();
   selectionButtons();
   LCD_Display();
+  rotaryEncoder();
+  //rotaryEncoderSystem();
 
 }
 
@@ -173,7 +188,7 @@ void LCD_Display() {
         lcd.setCursor(0,2);
         lcd.print("Opt: " + (String)functionData2[modeSource2 - 1].options[functionData2[modeSource2 - 1].selection]);
         lcd.setCursor(0,3);
-        if(functionData1[modeSource1 - 1].selection != 4) {
+        if(functionData2[modeSource2 - 1].selection != 4) {
           lcd.print("Value: " + (String)functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] + " " + (String)functionData2[modeSource2 - 1].suffix[functionData2[modeSource2 - 1].selection]);
         } else {
             lcd.print("Value: " + (String)functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] + " " + ((char) 223));
@@ -277,6 +292,124 @@ void selectionButtons() {
     previousSelectButton = selectButton;
     previousOutputButton = outputButton;
 }
+/*
+void rotaryEncoderSystem () {
+  int rotaryUp = digitalRead(scrollHigher);
+  int rotaryDown = digitalRead(scrollLower);
+  //int rotaryClick = digitalRead(outputSelectButton);
+  int higherDigit = digitalRead(higherDigitButton);
+  int lowerDigit = digitalRead(lowerDigitButton);
+
+  if(higherDigit == HIGH && previousHigherDigitButton == LOW) {
+    delay(50);
+    // move to the left if possible
+    if(scrollMultiplier < 1) {
+        scrollMultiplier++;
+    }
+  }
+
+  if(lowerDigit == HIGH && previousLowerDigitButton == LOW) {
+    delay(50);
+    // move to the right if possible
+    if(scrollMultiplier > -3) {
+        scrollMultiplier--;
+    }
+  }
+
+  if(rotaryUp == HIGH && previousScrollHigher == LOW) {
+      delay(50);
+      if(selectedOutput == 0) {
+        if(modeSource1 == 0) {
+          DCVoltage1 = DCVoltage1 + pow(10,scrollMultiplier);
+        } else {
+          functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] = functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] + pow(10,scrollMultiplier);
+        }
+      } else if(selectedOutput == 1) {
+        if(modeSource2 == 0) {
+          DCVoltage2 = DCVoltage2+ pow(10,scrollMultiplier);
+        } else {
+          functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] = functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] + pow(10,scrollMultiplier);
+        }
+      }
+  }
+
+  if(rotaryDown == HIGH && previousScrollLower == LOW) {
+      delay(50);
+      if(selectedOutput == 0) {
+        if(modeSource1 == 0) {
+          DCVoltage1 = DCVoltage1 - pow(10,scrollMultiplier);
+        } else {
+          functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] = functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] - pow(10,scrollMultiplier);
+        }
+      } else if(selectedOutput == 1) {
+        if(modeSource2 == 0) {
+          DCVoltage2 = DCVoltage2 - pow(10,scrollMultiplier);
+        } else {
+          functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] = functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] - pow(10,scrollMultiplier);
+        }
+      }
+  }
+
+
+}
+*/
+
+/*
+void updateEncoder() {
+  int MSB = digitalRead(scrollHigher); //MSB = most significant bit
+  int LSB = digitalRead(scrollLower); //LSB = least significant bit
+  int encoded = (MSB << 1) |LSB; //converting the 2 pin value to single number 
+  int sum = (lastEncoded << 2) | encoded; //adding it to the previous encoded value 
+  if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {
+      Serial.println("going up");
+      if(selectedOutput == 0) {
+        if(modeSource1 == 0) {
+          DCVoltage1 = DCVoltage1 + pow(10,scrollMultiplier);
+        } else {
+          functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] = functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] + pow(10,scrollMultiplier);
+        }
+      } else if(selectedOutput == 1) {
+        if(modeSource2 == 0) {
+          DCVoltage2 = DCVoltage2+ pow(10,scrollMultiplier);
+        } else {
+          functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] = functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] + pow(10,scrollMultiplier);
+        }
+      }
+  }  
+  if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {
+    Serial.println("going down");
+      if(selectedOutput == 0) {
+        if(modeSource1 == 0) {
+          DCVoltage1 = DCVoltage1 - pow(10,scrollMultiplier);
+        } else {
+          functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] = functionData1[modeSource1 - 1].data[functionData1[modeSource1 - 1].selection] - pow(10,scrollMultiplier);
+        }
+      } else if(selectedOutput == 1) {
+        if(modeSource2 == 0) {
+          DCVoltage2 = DCVoltage2 - pow(10,scrollMultiplier);
+        } else {
+          functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] = functionData2[modeSource2 - 1].data[functionData2[modeSource2 - 1].selection] - pow(10,scrollMultiplier);
+        }
+      }
+      lastEncoded = encoded; //store this value for next time }
+  } 
+}
+*/
+
+void rotaryEncoder () {
+  rotaryState = digitalRead(scrollHigher);
+
+  if(rotaryState != lastRotaryState) {
+    if(digitalRead(scrollLower) != rotaryState) {
+      DCVoltage1++;
+    } else {
+      DCVoltage1--;
+    }
+
+  }
+  lastRotaryState = rotaryState;
+}
+
 
 void statusLED(String colour) {
   if(colour == "Red") {
