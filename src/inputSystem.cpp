@@ -51,17 +51,6 @@ String arbitaryWaveSuffix[] = {"V", "Vpp", "Hz", "deg"};
 String dcWaveSuffix[] = {"V", ""};
 String sqWaveSuffix[] = {"V", "Vpp", "Hz", "%"};
 
-// for storing user data
-typedef struct ArbitarySettings {
-    float data[4] = {0, 1, 1000, 0};
-
-} DefaultSettings;
-
-typedef struct _DCSettings {
-    float data[2] = {1, 1};
-
-} DCSettings;
-
 DefaultSettings waveformData1[4];
 DefaultSettings waveformData2[4];
 DCSettings dcData1;

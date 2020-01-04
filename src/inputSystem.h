@@ -20,3 +20,14 @@ void LeftArrow();
 void RightArrow();
 void RotaryInput();
 void RotaryButton();
+
+// for storing user data
+typedef struct ArbitarySettings {
+    float data[4] = {0, 1, 1000, 0};
+
+} DefaultSettings;
+
+typedef struct _DCSettings {
+    float data[2] = {1, 1};
+
+} DCSettings;
