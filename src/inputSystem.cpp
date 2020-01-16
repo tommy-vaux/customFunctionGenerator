@@ -5,11 +5,20 @@
 #define MAX_AMPLITUDE 15
 #define MAX_AMPLITUDE_DC 30
 
+#define MAX_OFFSET 5
+#define MAX_PHASE 359
+#define MIN_PHASE -359
+
+#define MIN_MULTIPLIER -2
+#define MAX_MULTIPLIER_SMALL 1 // for smaller value inputs, like voltage, offset, magnitude
+#define MAX_MULTIPLIER_PHASE 3 // for phase only
+#define MAX_MULTIPLER_FREQUNECY_NORMAL 4 // only frequency reaches values above 1000
+
 // the maximum frequencies that can be achieved by the function generator at given res due to CPU limits (in Hz).
 #define MAX_120 1000
 #define Max_60 2000
 #define Max_30 5000
-#define Max_15 10000
+#define Max_15 10000 // this is basically our maximum frequency
 
 // PINS FOR INPUT
 #define modePin 44
@@ -17,12 +26,14 @@
 #define outputPin 40
 #define leftArrow 28
 #define rightArrow 30
-#define rotaryUp 7
-#define rotaryDown 8
+#define rotaryA 6
+#define rotaryB 7
 #define rotaryButton 9
 
 int output = 0;
 int multiplier = 1; //1^multiplier, so 1^1 = 1, 1^2 = 10, 1^-1 = 0.1. In this case we won't treat 0 as a valid multiplier.
+int rotaryState;
+int lastRotaryState;
 
 // for source 1
 int mode1 = 0;
@@ -329,43 +340,92 @@ void RightArrow() { // reduce the multiplier
     last_change_right_time = interrupt_time;
 }
 
-void RotaryInput() { // for increasing/decreasing values on the display
-        
-    // PERFORM BUTTON FUNCTIONALITY HERE.
-    // still need to update the display here ---------------------------------------------------------------------------
-    if(digitalRead(rotaryUp) == digitalRead(rotaryDown)) {
-        //increasing
-        if(output) {
-            if(mode2 == 0) {
-                dcData2.data[selection2]++;
+void RotaryInput() { // for increasing/decreasing values on the display. This needs to be run in loop unfortunately.
+    rotaryState = digitalRead(rotaryA);
+    if(rotaryState != lastRotaryState) {
+        if(digitalRead(rotaryB) != rotaryState) {
+            //increasing
+            if(output) {
+                if(mode2 == 0) {
+                    if(selection2 == 0){
+                        dcData2.data[selection2] += 1*multiplier;
+                    } else {
+                        dcData2.data[selection2] = !dcData2.data[selection2];
+                    }
+                    // force the value back down to the maximum if it goes over, or back to the minimum if it goes under
+                    if(dcData2.data[1] == true && dcData2.data[0] > MAX_AMPLITUDE_DC) {
+                        dcData2.data[0] = MAX_AMPLITUDE_DC;
+                    } else if(dcData2.data[0] > MAX_AMPLITUDE && dcData2.data[1] == false) {
+                        dcData2.data[0] = MAX_AMPLITUDE;
+                    } else if(dcData2.data[0] < 0) {
+                        dcData2.data[0] = 0;
+                    }
+                } else {
+                    if(waveformData2[mode2].data[selection2])
+                    waveformData2[mode2].data[selection2] += 1*multiplier;;
+                }
             } else {
-                waveformData2[mode2].data[selection2]++;
+                if(mode1 == 0) {
+                    if(selection1 == 0){
+                        dcData1.data[selection1] += 1*multiplier;
+                    } else {
+                        dcData1.data[selection1] = !dcData1.data[selection1];
+                    }
+                    // force the value back down to the maximum if it goes over, or back to the minimum if it goes under
+                    if(dcData1.data[1] == true && dcData1.data[0] > MAX_AMPLITUDE_DC) {
+                        dcData1.data[0] = MAX_AMPLITUDE_DC;
+                    } else if(dcData1.data[0] > MAX_AMPLITUDE && dcData1.data[1] == false) {
+                        dcData1.data[0] = MAX_AMPLITUDE;
+                    } else if(dcData1.data[0] < 0) {
+                        dcData1.data[0] = 0;
+                    }
+                } else {
+                    waveformData1[mode1].data[selection1]++;
+                }
             }
         } else {
-            if(mode1 == 0) {
-                dcData1.data[selection1]++;
+            //decreasing
+            if(output) {
+                if(mode2 == 0) {
+                    if(selection2 == 0){
+                        dcData2.data[selection2] -= 1*multiplier;
+                    } else {
+                        dcData2.data[selection2] = !dcData2.data[selection2];
+                    }
+                    // force the value back down to the maximum if it goes over, or back to the minimum if it goes under
+                    if(dcData2.data[1] == true && dcData2.data[0] > MAX_AMPLITUDE_DC) {
+                        dcData2.data[0] = MAX_AMPLITUDE_DC;
+                    } else if(dcData2.data[0] > MAX_AMPLITUDE && dcData2.data[1] == false) {
+                        dcData2.data[0] = MAX_AMPLITUDE;
+                    } else if(dcData2.data[0] < 0) {
+                        dcData2.data[0] = 0;
+                    }
+                } else {
+                    waveformData2[mode2].data[selection2]--;
+                }
             } else {
-                waveformData1[mode1].data[selection1]++;
+                if(mode1 == 0) {
+                    if(selection1 == 0){
+                        dcData1.data[selection1] -= 1*multiplier;
+                    } else {
+                        dcData1.data[selection1] = !dcData1.data[selection1];
+                    }
+                    // force the value back down to the maximum if it goes over, or back to the minimum if it goes under
+                    if(dcData1.data[1] == true && dcData1.data[0] > MAX_AMPLITUDE_DC) {
+                        dcData1.data[0] = MAX_AMPLITUDE_DC;
+                    } else if(dcData1.data[0] > MAX_AMPLITUDE && dcData1.data[1] == false) {
+                        dcData1.data[0] = MAX_AMPLITUDE;
+                    } else if(dcData1.data[0] < 0) {
+                        dcData1.data[0] = 0;
+                    }
+                } else {
+                    waveformData1[mode1].data[selection1]--;
+                }
             }
         }
-    } else {
-        //decreasing
-        if(output) {
-            if(mode2 == 0) {
-                dcData2.data[selection2]++;
-            } else {
-                waveformData2[mode2].data[selection2]--;
-            }
-        } else {
-            if(mode1 == 0) {
-                dcData1.data[selection1]++;
-            } else {
-                waveformData1[mode1].data[selection1]--;
-            }
-        }
+        displayV2(); // display will only be updated if a change in rotary encoder occurs.
     }
-
-    displayV2();
+    lastRotaryState = rotaryState;
 }
 
 void RotaryButton() { // idk what I will use this for, but i might make it an option.
@@ -388,8 +448,8 @@ void setupIO() { // this is defined in the header as it is visible to the main s
     pinMode(selectPin, INPUT);
     pinMode(outputPin, INPUT);
 
-    pinMode(rotaryUp, INPUT_PULLUP);
-    pinMode(rotaryDown, INPUT_PULLUP);
+    pinMode(rotaryA, INPUT);
+    pinMode(rotaryB, INPUT);
     pinMode(rotaryButton, INPUT);
 
     // input systems
@@ -398,14 +458,12 @@ void setupIO() { // this is defined in the header as it is visible to the main s
     attachInterrupt(digitalPinToInterrupt(outputPin), ChangeOutput, RISING);
 
     // rotary encoder setup
-    attachInterrupt(digitalPinToInterrupt(rotaryUp), RotaryInput, FALLING);
+    //attachInterrupt(digitalPinToInterrupt(rotaryA), RotaryInput, FALLING);
     attachInterrupt(digitalPinToInterrupt(rotaryButton), RotaryButton, RISING);
 
 
     pinMode(leftArrow, INPUT);
     pinMode(rightArrow, INPUT);
-    pinMode(rotaryUp, INPUT);
-    pinMode(rotaryDown, INPUT);
 
     displayV2();
 
