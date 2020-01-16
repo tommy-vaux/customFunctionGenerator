@@ -12,6 +12,8 @@ void DisplayOutput();
 void DisplayMode();
 void DisplaySelection();
 void DisplayData();
+void setupInputCursor();
+void updateMultiplier();
 
 void ChangeMode();
 void ChangeSelection();

@@ -12,7 +12,7 @@
 #define MIN_MULTIPLIER -2
 #define MAX_MULTIPLIER_SMALL 1 // for smaller value inputs, like voltage, offset, magnitude
 #define MAX_MULTIPLIER_PHASE 3 // for phase only
-#define MAX_MULTIPLER_FREQUNECY_NORMAL 4 // only frequency reaches values above 1000
+#define MAX_MULTIPLER_FREQUNECY_NORMAL 4 // only frequency reaches values above 1000. Square output should be able to go much higher than this tho is PWM is used.
 
 // the maximum frequencies that can be achieved by the function generator at given res due to CPU limits (in Hz).
 #define MAX_120 1000
@@ -24,14 +24,14 @@
 #define modePin 44
 #define selectPin 50
 #define outputPin 40
-#define leftArrow 28
-#define rightArrow 30
+#define leftArrow 9
+#define rightArrow 10
 #define rotaryA 6
 #define rotaryB 7
-#define rotaryButton 9
+#define rotaryButton 8
 
 int output = 0;
-int multiplier = 1; //1^multiplier, so 1^1 = 1, 1^2 = 10, 1^-1 = 0.1. In this case we won't treat 0 as a valid multiplier.
+int multiplier = 0; //1^multiplier, so 10^1 = 1, 10^0 = 1, 1^-1 = 0.1. In this case we won't treat 0 as a valid multiplier.
 int rotaryState;
 int lastRotaryState;
 
@@ -167,21 +167,40 @@ void displayV2() {
             lcd.print("Value: " + (String)waveformData1[displayMode - 1].data[displaySelection] + " " + arbitaryWaveSuffix[displaySelection]);
         }
     }
-    lcd.setCursor(7,3); // move cursor to start of float value
+    //lcd.setCursor(7,3); // move cursor to start of float value
+    setupInputCursor();
     lcd.blink();
 
 
 }
 
-void setupInputCursor(int mode) {
+float getDisplayData() { // returns the value currently shown in the display. needed for the input cursor/multiplier to work properly.
     if(output) {
-
+        if(mode2 == 0) {
+            return dcData2.data[selection2];
+        } else {
+            return waveformData2[mode2].data[selection2];
+        }
     } else {
-
+        if(mode1 == 0) {
+            return dcData1.data[selection1];
+        } else {
+            return waveformData1[mode1].data[selection1];
+        }
     }
+}
+
+void setupInputCursor() {
+    float data = getDisplayData();
+    short position = ((String)data).length() - 4; // figures out the position along the data the cursor should be at to correctly be at the first positive multiplier
+    short startPos = 7; // this is the position where the cursor starts, (ie the first data position on the display, the largest multiple of the current number)
+    short finalCursorPos = startPos;
     if(multiplier < 0) {
-
+        finalCursorPos = startPos + position - multiplier + 1;
+    } else {
+        finalCursorPos = startPos + position - multiplier;
     }
+    lcd.setCursor(finalCursorPos, 3);
     
 }
 
@@ -322,6 +341,8 @@ void LeftArrow() { // increase the multiplier
         // PERFORM BUTTON FUNCTIONALITY HERE.
         multiplier++;
         // still need to update the display here ---------------------------------------------------------------------------
+        updateMultiplier();
+        displayV2();
 
     }
     last_change_output_time = interrupt_time;
@@ -335,20 +356,44 @@ void RightArrow() { // reduce the multiplier
         // PERFORM BUTTON FUNCTIONALITY HERE.
         multiplier--;
         // still need to update the display here ---------------------------------------------------------------------------
+        updateMultiplier();
+        displayV2();
 
     }
     last_change_right_time = interrupt_time;
 }
 
+void updateMultiplier() { // applies min/max values to the multiplier
+    if(output) { // need cause I need to know which one is selected
+        if(mode2 == 0) {
+            if(multiplier > MAX_MULTIPLIER_SMALL) {
+                multiplier = MAX_MULTIPLIER_SMALL;
+            } else if(multiplier < MIN_MULTIPLIER) {
+                multiplier = MIN_MULTIPLIER;
+            }
+        }
+    } else {
+        if(mode1 == 0) {
+            if(multiplier > MAX_MULTIPLIER_SMALL) {
+                multiplier = MAX_MULTIPLIER_SMALL;
+            } else if(multiplier < MIN_MULTIPLIER) {
+                multiplier = MIN_MULTIPLIER;
+            }
+        }
+    }
+
+}
+
 void RotaryInput() { // for increasing/decreasing values on the display. This needs to be run in loop unfortunately.
     rotaryState = digitalRead(rotaryA);
     if(rotaryState != lastRotaryState) {
+        updateMultiplier();
         if(digitalRead(rotaryB) != rotaryState) {
             //increasing
             if(output) {
                 if(mode2 == 0) {
                     if(selection2 == 0){
-                        dcData2.data[selection2] += 1*multiplier;
+                        dcData2.data[selection2] += pow(10,multiplier);
                     } else {
                         dcData2.data[selection2] = !dcData2.data[selection2];
                     }
@@ -362,12 +407,12 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                     }
                 } else {
                     if(waveformData2[mode2].data[selection2])
-                    waveformData2[mode2].data[selection2] += 1*multiplier;;
+                    waveformData2[mode2].data[selection2] += pow(10,multiplier);
                 }
             } else {
                 if(mode1 == 0) {
                     if(selection1 == 0){
-                        dcData1.data[selection1] += 1*multiplier;
+                        dcData1.data[selection1] += pow(10,multiplier);
                     } else {
                         dcData1.data[selection1] = !dcData1.data[selection1];
                     }
@@ -388,7 +433,7 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
             if(output) {
                 if(mode2 == 0) {
                     if(selection2 == 0){
-                        dcData2.data[selection2] -= 1*multiplier;
+                        dcData2.data[selection2] -= pow(10,multiplier);
                     } else {
                         dcData2.data[selection2] = !dcData2.data[selection2];
                     }
@@ -406,7 +451,7 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
             } else {
                 if(mode1 == 0) {
                     if(selection1 == 0){
-                        dcData1.data[selection1] -= 1*multiplier;
+                        dcData1.data[selection1] -= pow(10,multiplier);
                     } else {
                         dcData1.data[selection1] = !dcData1.data[selection1];
                     }
@@ -444,26 +489,23 @@ void RotaryButton() { // idk what I will use this for, but i might make it an op
 void setupIO() { // this is defined in the header as it is visible to the main script
     lcd.begin(20,4);
 
-    pinMode(modePin, INPUT);
-    pinMode(selectPin, INPUT);
-    pinMode(outputPin, INPUT);
+    //pinMode(modePin, INPUT);
+    //pinMode(selectPin, INPUT);
+    //pinMode(outputPin, INPUT);
 
     pinMode(rotaryA, INPUT);
     pinMode(rotaryB, INPUT);
-    pinMode(rotaryButton, INPUT);
 
     // input systems
     attachInterrupt(digitalPinToInterrupt(modePin),ChangeMode, RISING);
     attachInterrupt(digitalPinToInterrupt(selectPin), ChangeSelection, RISING);
     attachInterrupt(digitalPinToInterrupt(outputPin), ChangeOutput, RISING);
+    attachInterrupt(digitalPinToInterrupt(leftArrow), LeftArrow, RISING);
+    attachInterrupt(digitalPinToInterrupt(rightArrow), RightArrow, RISING);
 
     // rotary encoder setup
     //attachInterrupt(digitalPinToInterrupt(rotaryA), RotaryInput, FALLING);
-    attachInterrupt(digitalPinToInterrupt(rotaryButton), RotaryButton, RISING);
-
-
-    pinMode(leftArrow, INPUT);
-    pinMode(rightArrow, INPUT);
+    attachInterrupt(digitalPinToInterrupt(rotaryButton), RotaryButton, RISING); // not tied to anything atm
 
     displayV2();
 
