@@ -1,13 +1,28 @@
 #include <Arduino.h>
 #include "waves.h"
+#include "inputSystem.h"
 
 void setupOutput() {
     pinMode(DAC0, OUTPUT);
-    pinMode(DAC1, OUTPUT);   
+    pinMode(DAC1, OUTPUT);
+
+    analogWriteResolution(12);   
 }
 
-void generateDC(int output, float voltage, int offset) {
+void generateDC(int output, float voltage, int offset) { // not working yet...
+    int pin = DAC0;
+    float finalValue = 0;
+    if(output) {
+        pin = DAC1;
+    }
+    if(offset) {
+        finalValue = voltage/MAX_AMPLITUDE_DC * 4096;
+    } else {
+        finalValue = voltage/MAX_AMPLITUDE * 4096;
+    }
 
+    analogWrite(pin, finalValue);
+    delayMicroseconds(100);
 }
 
 void generateSineWave(int output, float amplitude, float freq, float phase) {
