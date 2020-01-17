@@ -9,7 +9,7 @@ void setupOutput() {
     analogWriteResolution(12);   
 }
 
-void generateDC(int output, float voltage, int offset) { // not working yet...
+void generateDC(int output, float voltage, int offset) {
     int pin = DAC0;
     float finalValue = 0;
     if(output) {
@@ -29,6 +29,17 @@ void generateSineWave(int output, float amplitude, float freq, float phase) {
 
     // will require testing to figure out how to combine resolution + delayVar to create the frequency given by the input.
     int resolution = 1; // multiplier - 1 = 120, 2 = 60, 3 = 30, 4 = 15
+    if(freq > MAX_15) {
+        resolution = 4;
+        freq = MAX_15;
+    }
+    else if(freq > MAX_30){
+        resolution = 4;
+    } else if(freq > MAX_60) {
+        resolution = 3;
+    } else if(freq > MAX_120) {
+        resolution = 2;
+    }
     int delayVar = freq;
     // need some way of getting the data settings for this sine wave
     for(int i = 0; i < 128; i+=resolution) {
@@ -50,6 +61,10 @@ void generateTriangleWave(int output, float amplitude, float freq, float phase) 
 }
 
 void generateSawtoothWave(int output, float amplitude, float freq, float phase) {
+
+}
+
+void applyOffset(int output, int offset) { // gonna apply offset with the op-amp probably.
 
 }
 

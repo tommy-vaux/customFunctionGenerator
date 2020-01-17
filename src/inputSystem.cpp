@@ -201,7 +201,7 @@ float getDisplayData() { // returns the value currently shown in the display. ne
     }
 }
 
-void setupInputCursor() {
+void setupInputCursor() { // weird glitch - it is one off (over the period) with voltage offset on sine & square, but its fine on sawtooth and triangle. Data also seems to be applying in wrong places.
     float data = getDisplayData();
     short position = ((String)data).length() - 4; // figures out the position along the data the cursor should be at to correctly be at the first positive multiplier
     short startPos = 7; // this is the position where the cursor starts, (ie the first data position on the display, the largest multiple of the current number)
@@ -214,68 +214,6 @@ void setupInputCursor() {
     lcd.setCursor(finalCursorPos, 3);
     
 }
-
-/*void DisplayMode() {
-    cleanLCD(1);
-    if(output) {
-        if(mode2 == 0) {
-            lcd.print("Mode: " + dcData2.name);
-        } else {
-            lcd.print("Mode: " + waveformData2[selection2].name);
-        }
-        
-    } else {
-        if(mode1 == 0) {
-            lcd.print("Mode: " + dcData1.name);
-        } else {
-            lcd.print("Mode: " + waveformData1[selection1].name);
-        }
-    }
-}*/
-
-/*void DisplaySelection() {
-    cleanLCD(2);
-    if(output) {
-        if(mode2 == 0) {
-            lcd.print("Opt: " + dcWaveSettings[selection2]);
-        } else if(mode2 == 2) {
-            lcd.print("Opt: " + sqWaveSettings[selection2]);
-        } else {
-            lcd.print("Opt: " + arbitaryWaveSettings[selection2]);
-        }
-    } else {
-        if(mode1 == 0) {
-            lcd.print("Opt: " + dcWaveSettings[selection1]);
-        } else if(mode1 == 2) {
-            lcd.print("Opt: " + sqWaveSettings[selection1]);
-        } else {
-            lcd.print("Opt: " + arbitaryWaveSettings[selection1]);
-        }
-    }
-}
-
-void DisplayData() {
-    cleanLCD(3);
-    if(output) {
-        if(mode2 == 0) {
-            lcd.print("Value: " + (String)dcData2.data[selection2] + " " + dcWaveSuffix[selection2]);
-        } else if (mode2 == 2) {
-            lcd.print("Value: " + (String)waveformData2[selection2].data[selection2] + " " + sqWaveSuffix[selection2]);
-        } else {
-            lcd.print("Value: " + (String)waveformData2[selection2].data[selection2] + " " + arbitaryWaveSuffix[selection2]);
-        }
-        
-    } else {
-        if(mode2 == 0) {
-            lcd.print("Value: " + (String)dcData1.data[selection1] + " " + dcWaveSuffix[selection1]);
-        } else if (mode2 == 2) {
-            lcd.print("Value: " + (String)waveformData1[selection1].data[selection1] + " " + sqWaveSuffix[selection1]);
-        } else {
-            lcd.print("Value: " + (String)waveformData1[selection1].data[selection1] + " " + arbitaryWaveSuffix[selection1]);
-        }
-    }
-}*/
-
 
 void ChangeMode() { // output mode (Sine, DC, etc.)
     static unsigned long last_change_mode_time = 0;
@@ -382,6 +320,8 @@ void updateMultiplier() { // applies min/max values to the multiplier
             } else if(multiplier < MIN_MULTIPLIER) {
                 multiplier = MIN_MULTIPLIER;
             }
+        } else {
+
         }
     } else {
         if(mode1 == 0) {
@@ -390,6 +330,8 @@ void updateMultiplier() { // applies min/max values to the multiplier
             } else if(multiplier < MIN_MULTIPLIER) {
                 multiplier = MIN_MULTIPLIER;
             }
+        } else {
+            
         }
     }
 
@@ -417,8 +359,9 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData2.data[0] = 0;
                     }
                 } else {
-                    if(waveformData2[mode2].data[selection2])
+                    //if(waveformData2[mode2].data[selection2])
                     waveformData2[mode2].data[selection2] += pow(10,multiplier);
+                    checkWaveformData();
                 }
             } else {
                 if(mode1 == 0) {
@@ -436,7 +379,8 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData1.data[0] = 0;
                     }
                 } else {
-                    waveformData1[mode1].data[selection1]++;
+                    waveformData1[mode1].data[selection1] += pow(10,multiplier);
+                    checkWaveformData();
                 }
             }
         } else {
@@ -457,7 +401,8 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData2.data[0] = 0;
                     }
                 } else {
-                    waveformData2[mode2].data[selection2]--;
+                    waveformData2[mode2].data[selection2] -= pow(10,multiplier);
+                    checkWaveformData();
                 }
             } else {
                 if(mode1 == 0) {
@@ -475,13 +420,77 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData1.data[0] = 0;
                     }
                 } else {
-                    waveformData1[mode1].data[selection1]--;
+                    waveformData1[mode1].data[selection1] -= pow(10,multiplier);
+                    checkWaveformData();
                 }
             }
         }
         displayV2(); // display will only be updated if a change in rotary encoder occurs.
     }
     lastRotaryState = rotaryState;
+}
+
+void checkWaveformData() {
+    if(output) {
+        
+        // check offset
+        if(waveformData2[mode2].data[0] > MAX_OFFSET) {
+            waveformData2[mode2].data[0] = MAX_OFFSET;
+        } else if(waveformData2[mode2].data[0] < -MAX_OFFSET) {
+            waveformData2[mode2].data[0] = -MAX_OFFSET;
+        }
+        // check amplitude
+        if(waveformData2[mode2].data[1] > MAX_AMPLITUDE) {
+            waveformData2[mode2].data[1] = MAX_AMPLITUDE;
+        } else if(waveformData2[mode2].data[1] < 0) {
+            waveformData2[mode2].data[1] = 0;
+        }
+        // check frequency is greater than zero - the hardware itself will automatically limit the frequency.
+        if(waveformData2[mode2].data[2] < 0){
+            waveformData2[mode2].data[2] = 0;
+        }
+
+        if(mode2 != 2) { // NOT a square wave, so must be phase
+            if(waveformData2[mode2].data[3] > MAX_PHASE || waveformData2[mode2].data[3] < MIN_PHASE){
+                waveformData2[mode2].data[3] = 0;
+            }
+        } else {
+            if(waveformData2[mode2].data[3] > MAX_DUTY) {
+                waveformData2[mode2].data[3] = 100;
+            } else if(waveformData2[mode2].data[3] < 0) {
+                waveformData2[mode2].data[3] = 0;
+            }
+        }
+    } else {
+        // check offset
+        if(waveformData1[mode1].data[0] > MAX_OFFSET) {
+            waveformData1[mode1].data[0] = MAX_OFFSET;
+        } else if(waveformData1[mode1].data[0] < -MAX_OFFSET) {
+            waveformData1[mode1].data[0] = -MAX_OFFSET;
+        }
+        // check amplitude
+        if(waveformData1[mode1].data[1] > MAX_AMPLITUDE) {
+            waveformData1[mode1].data[1] = MAX_AMPLITUDE;
+        } else if(waveformData1[mode1].data[1] < 0) {
+            waveformData1[mode1].data[1] = 0;
+        }
+        // check frequency is greater than zero - the hardware itself will automatically limit the frequency.
+        if(waveformData1[mode1].data[2] < 0){
+            waveformData1[mode1].data[2] = 0;
+        }
+
+        if(mode1 != 2) { // NOT a square wave, so must be phase
+            if(waveformData1[mode1].data[3] > MAX_PHASE || waveformData1[mode1].data[3] < MIN_PHASE){
+                waveformData1[mode1].data[3] = 0;
+            }
+        } else {
+            if(waveformData1[mode1].data[3] > MAX_DUTY) {
+                waveformData1[mode1].data[3] = 100;
+            } else if(waveformData1[mode1].data[3] < 0) {
+                waveformData1[mode1].data[3] = 0;
+            }
+        }
+    }
 }
 
 void RotaryButton() { // idk what I will use this for, but i might make it an option.

@@ -9,6 +9,7 @@
 #define MAX_OFFSET 5
 #define MAX_PHASE 359
 #define MIN_PHASE -359
+#define MAX_DUTY 100
 
 #define MIN_MULTIPLIER -2
 #define MAX_MULTIPLIER_SMALL 1 // for smaller value inputs, like voltage, offset, magnitude
@@ -17,9 +18,9 @@
 
 // the maximum frequencies that can be achieved by the function generator at given res due to CPU limits (in Hz).
 #define MAX_120 1000
-#define Max_60 2000
-#define Max_30 5000
-#define Max_15 10000 // this is basically our maximum frequency
+#define MAX_60 2000
+#define MAX_30 5000
+#define MAX_15 10000 // this is basically our maximum frequency
 
 // FUNCTIONS
 void setupIO();
@@ -32,6 +33,7 @@ void DisplaySelection();
 void DisplayData();
 void setupInputCursor();
 void updateMultiplier();
+void checkWaveformData();
 
 void ChangeMode();
 void ChangeSelection();
@@ -48,7 +50,7 @@ typedef struct ArbitarySettings {
 } DefaultSettings;
 
 typedef struct _DCSettings {
-    float data[2] = {1, 1};
+    float data[2] = {1, 0};
 
 } DCSettings;
 
