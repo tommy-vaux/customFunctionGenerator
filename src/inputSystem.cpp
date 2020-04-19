@@ -207,9 +207,19 @@ void setupInputCursor() { // weird glitch - it is one off (over the period) with
     short startPos = 7; // this is the position where the cursor starts, (ie the first data position on the display, the largest multiple of the current number)
     short finalCursorPos = startPos;
     if(multiplier < 0) {
-        finalCursorPos = startPos + position - multiplier + 1;
+        if(data < 0) {
+            finalCursorPos = startPos + position - multiplier + 2;
+        } else {
+            finalCursorPos = startPos + position - multiplier + 1;
+        }
+        
     } else {
-        finalCursorPos = startPos + position - multiplier;
+        if(data < 0) {
+            finalCursorPos = startPos + position - multiplier + 1;
+        } else {
+            finalCursorPos = startPos + position - multiplier;
+        }
+        
     }
     lcd.setCursor(finalCursorPos, 3);
     
@@ -226,6 +236,7 @@ void ChangeMode() { // output mode (Sine, DC, etc.)
                 mode2++;
             } else {
                 mode2 = 0;
+                selection2 = 0;
             }
 
         } 
@@ -234,6 +245,7 @@ void ChangeMode() { // output mode (Sine, DC, etc.)
                 mode1++;
             } else {
                 mode1 = 0;
+                selection1 = 0;
             }
         }
 
@@ -360,7 +372,7 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                     }
                 } else {
                     //if(waveformData2[mode2].data[selection2])
-                    waveformData2[mode2].data[selection2] += pow(10,multiplier);
+                    waveformData2[mode2 - 1].data[selection2] += pow(10,multiplier);
                     checkWaveformData();
                 }
             } else {
@@ -379,7 +391,7 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData1.data[0] = 0;
                     }
                 } else {
-                    waveformData1[mode1].data[selection1] += pow(10,multiplier);
+                    waveformData1[mode1 - 1].data[selection1] += pow(10,multiplier);
                     checkWaveformData();
                 }
             }
@@ -401,7 +413,7 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData2.data[0] = 0;
                     }
                 } else {
-                    waveformData2[mode2].data[selection2] -= pow(10,multiplier);
+                    waveformData2[mode2 - 1].data[selection2] -= pow(10,multiplier);
                     checkWaveformData();
                 }
             } else {
@@ -420,7 +432,7 @@ void RotaryInput() { // for increasing/decreasing values on the display. This ne
                         dcData1.data[0] = 0;
                     }
                 } else {
-                    waveformData1[mode1].data[selection1] -= pow(10,multiplier);
+                    waveformData1[mode1 - 1].data[selection1] -= pow(10,multiplier);
                     checkWaveformData();
                 }
             }
@@ -434,60 +446,60 @@ void checkWaveformData() {
     if(output) {
         
         // check offset
-        if(waveformData2[mode2].data[0] > MAX_OFFSET) {
-            waveformData2[mode2].data[0] = MAX_OFFSET;
-        } else if(waveformData2[mode2].data[0] < -MAX_OFFSET) {
-            waveformData2[mode2].data[0] = -MAX_OFFSET;
+        if(waveformData2[mode2 - 1].data[0] > MAX_OFFSET) {
+            waveformData2[mode2 - 1].data[0] = MAX_OFFSET;
+        } else if(waveformData2[mode2 - 1].data[0] < -MAX_OFFSET) {
+            waveformData2[mode2 - 1].data[0] = -MAX_OFFSET;
         }
         // check amplitude
-        if(waveformData2[mode2].data[1] > MAX_AMPLITUDE) {
-            waveformData2[mode2].data[1] = MAX_AMPLITUDE;
-        } else if(waveformData2[mode2].data[1] < 0) {
-            waveformData2[mode2].data[1] = 0;
+        if(waveformData2[mode2 - 1].data[1] > MAX_AMPLITUDE) {
+            waveformData2[mode2 - 1].data[1] = MAX_AMPLITUDE;
+        } else if(waveformData2[mode2 - 1].data[1] < 0) {
+            waveformData2[mode2 - 1].data[1] = 0;
         }
         // check frequency is greater than zero - the hardware itself will automatically limit the frequency.
-        if(waveformData2[mode2].data[2] < 0){
-            waveformData2[mode2].data[2] = 0;
+        if(waveformData2[mode2 - 1].data[2] < 0){
+            waveformData2[mode2 - 1].data[2] = 0;
         }
 
         if(mode2 != 2) { // NOT a square wave, so must be phase
-            if(waveformData2[mode2].data[3] > MAX_PHASE || waveformData2[mode2].data[3] < MIN_PHASE){
-                waveformData2[mode2].data[3] = 0;
+            if(waveformData2[mode2 - 1].data[3] > MAX_PHASE || waveformData2[mode2].data[3] < MIN_PHASE){
+                waveformData2[mode2 - 1].data[3] = 0;
             }
         } else {
-            if(waveformData2[mode2].data[3] > MAX_DUTY) {
-                waveformData2[mode2].data[3] = 100;
-            } else if(waveformData2[mode2].data[3] < 0) {
-                waveformData2[mode2].data[3] = 0;
+            if(waveformData2[mode2 - 1].data[3] > MAX_DUTY) {
+                waveformData2[mode2 - 1].data[3] = 100;
+            } else if(waveformData2[mode2 - 1].data[3] < 0) {
+                waveformData2[mode2 - 1].data[3] = 0;
             }
         }
     } else {
         // check offset
-        if(waveformData1[mode1].data[0] > MAX_OFFSET) {
-            waveformData1[mode1].data[0] = MAX_OFFSET;
-        } else if(waveformData1[mode1].data[0] < -MAX_OFFSET) {
-            waveformData1[mode1].data[0] = -MAX_OFFSET;
+        if(waveformData1[mode1 - 1].data[0] > MAX_OFFSET) {
+            waveformData1[mode1 - 1].data[0] = MAX_OFFSET;
+        } else if(waveformData1[mode1 - 1].data[0] < -MAX_OFFSET) {
+            waveformData1[mode1 - 1].data[0] = -MAX_OFFSET;
         }
         // check amplitude
-        if(waveformData1[mode1].data[1] > MAX_AMPLITUDE) {
-            waveformData1[mode1].data[1] = MAX_AMPLITUDE;
-        } else if(waveformData1[mode1].data[1] < 0) {
-            waveformData1[mode1].data[1] = 0;
+        if(waveformData1[mode1 - 1].data[1] > MAX_AMPLITUDE) {
+            waveformData1[mode1 - 1].data[1] = MAX_AMPLITUDE;
+        } else if(waveformData1[mode1 - 1].data[1] < 0) {
+            waveformData1[mode1 - 1].data[1] = 0;
         }
         // check frequency is greater than zero - the hardware itself will automatically limit the frequency.
-        if(waveformData1[mode1].data[2] < 0){
-            waveformData1[mode1].data[2] = 0;
+        if(waveformData1[mode1 - 1].data[2] < 0){
+            waveformData1[mode1 - 1].data[2] = 0;
         }
 
         if(mode1 != 2) { // NOT a square wave, so must be phase
-            if(waveformData1[mode1].data[3] > MAX_PHASE || waveformData1[mode1].data[3] < MIN_PHASE){
-                waveformData1[mode1].data[3] = 0;
+            if(waveformData1[mode1 - 1].data[3] > MAX_PHASE || waveformData1[mode1 - 1].data[3] < MIN_PHASE){
+                waveformData1[mode1 - 1].data[3] = 0;
             }
         } else {
-            if(waveformData1[mode1].data[3] > MAX_DUTY) {
-                waveformData1[mode1].data[3] = 100;
-            } else if(waveformData1[mode1].data[3] < 0) {
-                waveformData1[mode1].data[3] = 0;
+            if(waveformData1[mode1 - 1].data[3] > MAX_DUTY) {
+                waveformData1[mode1 - 1].data[3] = 100;
+            } else if(waveformData1[mode1 - 1].data[3] < 0) {
+                waveformData1[mode1 - 1].data[3] = 0;
             }
         }
     }
