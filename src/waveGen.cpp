@@ -64,7 +64,7 @@ void generateSawtoothWave(int output, float amplitude, float freq, float phase) 
 
 }
 
-void applyOffset(int output, int offset) { // gonna apply offset with the op-amp probably.
+void applyOffset(int output, int offset) { // gonna apply offset with the op-amp probably. -- UPDATE NOPE, GONNA DO IT IN FUNCTION TO MAKE ELECTRONICS WAY EASIER. I CAN ADD IT LATER WHEN I CAN BE BOTHERED.
 
 }
 

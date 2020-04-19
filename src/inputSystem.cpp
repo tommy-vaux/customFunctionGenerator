@@ -6,8 +6,8 @@
 #define outputPin 40
 #define leftArrow 9
 #define rightArrow 10
-#define rotaryA 6
-#define rotaryB 7
+#define rotaryA 7
+#define rotaryB 6
 #define rotaryButton 8
 
 int output = 0;
@@ -148,7 +148,7 @@ void displayV2() {
                     lcd.print("Value: Yes");
                 } else {
                     lcd.print("Value: No");
-                }
+                }  
             } else {
                 if(dcData1.data[displaySelection] == 1) {
                     lcd.print("Value: Yes");
@@ -500,8 +500,7 @@ void RotaryButton() { // idk what I will use this for, but i might make it an op
         
         // PERFORM BUTTON FUNCTIONALITY HERE.
         // still need to update the display here ---------------------------------------------------------------------------
-        simpleDisplay();
-
+        displayV2();
     }
     last_rotary_button_time = interrupt_time;
 }
