@@ -190,13 +190,13 @@ float getDisplayData() { // returns the value currently shown in the display. ne
         if(mode2 == 0) {
             return dcData2.data[selection2];
         } else {
-            return waveformData2[mode2].data[selection2];
+            return waveformData2[mode2 - 1].data[selection2];
         }
     } else {
         if(mode1 == 0) {
             return dcData1.data[selection1];
         } else {
-            return waveformData1[mode1].data[selection1];
+            return waveformData1[mode1 - 1].data[selection1];
         }
     }
 }
@@ -206,19 +206,15 @@ void setupInputCursor() { // weird glitch - it is one off (over the period) with
     short position = ((String)data).length() - 4; // figures out the position along the data the cursor should be at to correctly be at the first positive multiplier
     short startPos = 7; // this is the position where the cursor starts, (ie the first data position on the display, the largest multiple of the current number)
     short finalCursorPos = startPos;
+    // force multiplers so that you cant be in 1000x with a value of 0 (at 0 it can only increase by 1, at 10 by 10s, at 100 by 100s, etc.)
     if(multiplier < 0) {
-        if(data < 0) {
-            finalCursorPos = startPos + position - multiplier + 2;
-        } else {
-            finalCursorPos = startPos + position - multiplier + 1;
-        }
+        finalCursorPos = startPos + position - multiplier + 1;
         
     } else {
-        if(data < 0) {
-            finalCursorPos = startPos + position - multiplier + 1;
-        } else {
-            finalCursorPos = startPos + position - multiplier;
+        if(data == 0) {
+            multiplier = 0;
         }
+        finalCursorPos = startPos + position - multiplier;
         
     }
     lcd.setCursor(finalCursorPos, 3);
@@ -248,7 +244,7 @@ void ChangeMode() { // output mode (Sine, DC, etc.)
                 selection1 = 0;
             }
         }
-
+        multiplier = 0;
         displayV2();
     }
     last_change_mode_time = interrupt_time;
